@@ -1,0 +1,39 @@
+services:
+  jenkins-blueocean:
+    build: .
+    container_name: jenkins-web
+    restart: on-failure
+    networks:
+      - jenkins
+    environment:
+      DOCKER_HOST: "tcp://docker:2376"
+      DOCKER_CERT_PATH: "/certs/client"
+      DOCKER_TLS_VERIFY: 1
+    ports:
+      - '8080:8080'
+      - '50000:50000'
+    volumes:
+      - jenkins-data:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
+  
+  alpine-socat:
+    image: alpine/socat
+    container_name: socat
+    restart: always
+    ports:
+      - '127.0.0.1:2376:2375'
+    command: "tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock"
+    networks:
+      - jenkins
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins-data:
+    driver: local
+  jenkins-docker-certs:
+    driver: local
+
+networks:
+  jenkins:
+    driver: bridge
